@@ -1,0 +1,22 @@
+{
+  "name": "t1d-tracker-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@block65/webcrypto-web-push": "^1.0.2",
+    "@hono/zod-validator": "^0.7.6",
+    "hono": "^4.7.11",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250430.0",
+    "typescript": "~5.8.3",
+    "wrangler": "^4.13.2"
+  }
+}

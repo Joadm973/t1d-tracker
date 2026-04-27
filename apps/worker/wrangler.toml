@@ -1,0 +1,16 @@
+name = "t1d-tracker-worker"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "t1d-tracker-db"
+database_id = "placeholder-replace-after-wrangler-d1-create"
+
+[vars]
+CORS_ORIGIN = "https://your-app.vercel.app"
+
+# Cron: fire every minute to check scheduled reminders
+[triggers]
+crons = ["* * * * *"]
