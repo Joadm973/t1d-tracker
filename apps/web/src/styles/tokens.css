@@ -1,0 +1,54 @@
+:root {
+  /* Glucose zones */
+  --color-glucose-very-low: #8B0000;
+  --color-glucose-low: #E53935;
+  --color-glucose-in-range: #3DA35D;
+  --color-glucose-high: #F4C430;
+  --color-glucose-very-high: #E65100;
+
+  /* TIR bars */
+  --color-tir-in-range: #3DA35D;
+  --color-tir-high: #F4C430;
+  --color-tir-very-high: #E65100;
+  --color-tir-low: #E53935;
+  --color-tir-very-low: #8B0000;
+
+  /* Surfaces */
+  --color-bg: #FFFFFF;
+  --color-surface: #F8F9FA;
+  --color-border: #E9ECEF;
+  --color-text: #0D0D0D;
+  --color-text-muted: #6C757D;
+
+  /* Brand */
+  --color-primary: #3DA35D;
+  --color-primary-fg: #FFFFFF;
+
+  /* Safe area */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+
+  /* Bottom nav height */
+  --bottom-nav-height: 64px;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0E0E10;
+  --color-surface: #1A1A1E;
+  --color-border: #2C2C30;
+  --color-text: #F8F9FA;
+  --color-text-muted: #9CA3AF;
+
+  /* Légèrement désaturé en dark */
+  --color-glucose-low: #EF5350;
+  --color-glucose-in-range: #4CAF79;
+  --color-glucose-high: #FFD54F;
+  --color-glucose-very-high: #FF7043;
+
+  --color-tir-in-range: #4CAF79;
+  --color-tir-high: #FFD54F;
+  --color-tir-very-high: #FF7043;
+  --color-tir-low: #EF5350;
+}
