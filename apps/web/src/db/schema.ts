@@ -38,6 +38,7 @@ export interface Reminder {
   days: number[]
   enabled: boolean
   pushSubscriptionId?: number
+  workerReminderId?: number
 }
 
 export interface OutboxItem {
