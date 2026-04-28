@@ -1,19 +1,24 @@
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useEffect, useRef } from 'react'
 import { Plus, Droplets, Syringe, UtensilsCrossed, Bell } from 'lucide-react'
 import { subHours, subDays, isAfter } from 'date-fns'
+import confetti from 'canvas-confetti'
 import Header from '@/components/layout/Header'
 import GlucoseSparkline from '@/components/charts/GlucoseSparkline'
 import TIRBar from '@/components/charts/TIRBar'
+import GlucoseMascot from '@/components/GlucoseMascot'
 import { db } from '@/db/schema'
 import { useSettingsStore } from '@/stores/settings'
 import { calculateTIR, glucoseColor, glucoseZone, trendArrow } from '@/lib/calculations'
 import { formatGlucose, formatRelative } from '@/lib/utils'
+import { useStreak } from '@/hooks/useStreak'
 import { motion } from 'framer-motion'
 
 export default function Dashboard() {
   const unit = useSettingsStore((s) => s.unit)
   const navigate = useNavigate()
+  const { streak, showCrown } = useStreak()
 
   const cutoff3h = subHours(new Date(), 3)
   const cutoffToday = subDays(new Date(), 1)
@@ -51,11 +56,33 @@ export default function Dashboard() {
     ? formatGlucose(latest.value, unit)
     : '--'
 
+  const mascotZone = !latest || isStale
+    ? 'no-data'
+    : glucoseZone(latest.value) === 'in-range'
+      ? 'in-range'
+      : (glucoseZone(latest.value) === 'low' || glucoseZone(latest.value) === 'very-low')
+        ? 'low'
+        : 'high'
+
+  // Fire confetti when a new in-range reading arrives
+  const prevLatestId = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    if (!latest?.id) return
+    if (prevLatestId.current === latest.id) return
+    prevLatestId.current = latest.id
+    if (glucoseZone(latest.value) === 'in-range') {
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.4 } })
+    }
+  }, [latest?.id, latest?.value])
+
   return (
     <div className="flex flex-col min-h-full">
       <Header title="T1D Tracker" />
 
       <div className="flex-1 px-4 py-4 space-y-4">
+        {/* Animated mascot */}
+        <GlucoseMascot zone={mascotZone} streak={streak} showCrown={showCrown} />
+
         {/* Main glucose card */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
