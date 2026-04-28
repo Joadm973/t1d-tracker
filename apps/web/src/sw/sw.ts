@@ -1,12 +1,20 @@
 /// <reference lib="webworker" />
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+import { cleanupOutdatedCaches, precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching'
+import { NavigationRoute, registerRoute } from 'workbox-routing'
 
 declare const self: ServiceWorkerGlobalScope
+
+// Take control of all clients immediately (no second-load required)
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
 cleanupOutdatedCaches()
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore __WB_MANIFEST is injected at build time by vite-plugin-pwa
 precacheAndRoute((self as unknown as { __WB_MANIFEST: unknown[] }).__WB_MANIFEST ?? [])
+
+// SPA navigation fallback: serve cached index.html for all routes when offline
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')))
 
 // ── Push handler ────────────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {

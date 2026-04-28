@@ -360,7 +360,10 @@ function PushSection({
 // ── Main route ────────────────────────────────────────────────────────────────
 export default function Settings() {
   const { unit, setUnit, targetLow, targetHigh, setTargets, theme, setTheme } = useSettingsStore()
-  const reminders = useLiveQuery(() => db.reminders.orderBy('time').toArray(), [])
+  const reminders = useLiveQuery(
+    () => db.reminders.toArray().then((arr) => arr.sort((a, b) => a.time.localeCompare(b.time))),
+    [],
+  )
   const [showAddReminder, setShowAddReminder] = useState(false)
 
   const { status, subscription, error, isInstalled, subscribe, unsubscribe } =
