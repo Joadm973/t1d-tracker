@@ -140,27 +140,26 @@ async function goToSettings(page) {
 ```
 Raison: `page.goto('/settings')` peut déclencher le `NavigationRoute` du SW de façon silencieuse.
 
-## Feature: Mascotte Glucose (TODO — pas encore implémenté)
-Placer entre le Header et la sparkline glucose dans Dashboard.tsx.
+## Feature: Mascotte Glucose (IMPLÉMENTÉ)
+Placée entre le Header et la sparkline glucose dans Dashboard.tsx.
 
 ### Composant GlucoseMascot (src/components/GlucoseMascot.tsx)
-- **Panda** 🐼 → glycémie normale (70–180) — animation bounce douce, Framer Motion
-- **Tortue** 🐢 → hypoglycémie (<70) — pulse lent, message "Mange quelque chose ! 🍬"
-- **Chat** 🐱 → hyperglycémie (>180) — rotation agitée, message "Bois de l'eau ! 💧"
-- **Panda endormi** 😴 → aucune donnée — animation respiration
-- Couronne 👑 sur le panda après streak ≥ 7 jours
-- Confetti (canvas-confetti) lors d'une nouvelle lecture in-range
+- **Panda** 🐼 → glycémie normale (70–180) — animation bounce douce (y: 0→-6→0, 1.4s)
+- **Tortue** 🐢 → hypoglycémie (<70) — pulse lent (scale: 1→0.92→1, 2.2s), message "Mange quelque chose ! 🍬"
+- **Chat** 🐱 → hyperglycémie (>180) — rotation agitée (rotate: -6°→6°, 0.6s), message "Bois de l'eau ! 💧"
+- **Panda endormi** 😴 → aucune donnée — animation respiration (scale: 1→1.04→1, 3s)
+- Couronne 👑 animée sur la mascotte après streak ≥ 7 jours
+- Badge "🔥 X jours dans la cible" affiché sous la mascotte si streak > 0
 
 ### Hook useStreak (src/hooks/useStreak.ts)
-- Calcule les jours consécutifs avec TIR ≥ 70%
-- Basé sur `db.readings` groupés par jour
-- Retourne `{ streak: number, showCrown: boolean }`
+- Calcule les jours consécutifs avec TIR ≥ 70% (fenêtre 30 jours)
+- Basé sur `db.glucoseReadings` groupés par jour (format: `yyyy-MM-dd`)
+- Retourne `{ streak: number, showCrown: boolean }` (`showCrown` si streak ≥ 7)
 
-### Dashboard updates
-- Importer `GlucoseMascot` et `useStreak`
-- Importer `confetti` de `canvas-confetti`
-- Déclencher confetti sur nouvelle lecture in-range (comparer readings entre renders)
-- Afficher "🔥 X jours dans la cible" si streak > 0
+### Dashboard (src/routes/Dashboard.tsx)
+- `mascotZone` dérivé de `glucoseZone(latest.value)` + état `isStale`
+- Confetti via `canvas-confetti` déclenché par `useEffect` sur `latest.id` quand la zone est `'in-range'`
+- `useRef<number>` garde l'ID de la dernière lecture pour éviter les doublons
 
 ## Branches
 - **Développement**: `claude/t1d-tracker-pwa-ZOPpM`
