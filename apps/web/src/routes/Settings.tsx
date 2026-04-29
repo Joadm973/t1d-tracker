@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Trash2, AlertTriangle, Download } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle, Download, Bell, BellOff } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import { db } from '@/db/schema'
 import type { Reminder } from '@/db/schema'
 import { useSettingsStore } from '@/stores/settings'
 import type { GlucoseUnit } from '@/stores/settings'
 import { mgToMmol } from '@/lib/calculations'
+import { usePushSubscription } from '@/hooks/usePushSubscription'
+import { workerClient } from '@/lib/worker'
 
 const DISCLAIMER =
   "Cette application est un outil de suivi personnel uniquement. Elle n'est pas un dispositif médical et ne remplace pas les conseils de votre équipe soignante. Ne l'utilisez pas pour prendre des décisions de traitement en cas d'hypoglycémie sévère ou d'urgence médicale."
@@ -208,6 +210,108 @@ function AddReminderSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
+function useToast() {
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const show = (text: string, ok: boolean) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setMessage({ text, ok })
+    timerRef.current = setTimeout(() => setMessage(null), 3000)
+  }
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+
+  return { message, show }
+}
+
+function PushSection() {
+  const { subscription, loading, supported, subscribe, unsubscribe } = usePushSubscription()
+  const { message, show } = useToast()
+  const [testing, setTesting] = useState(false)
+
+  const handleToggle = async () => {
+    try {
+      if (subscription) {
+        await unsubscribe()
+        show('Notifications désactivées', true)
+      } else {
+        await subscribe()
+        show('Notifications activées', true)
+      }
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'Erreur', false)
+    }
+  }
+
+  const handleTest = async () => {
+    if (!subscription) return
+    setTesting(true)
+    try {
+      await workerClient.testPush(subscription.endpoint)
+      show('Notification envoyée !', true)
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'Erreur', false)
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  if (!supported) return null
+
+  return (
+    <>
+      <SectionTitle>Notifications push</SectionTitle>
+      <Card>
+        <Row
+          label="Rappels push"
+          sub={subscription ? 'Abonné — notifications actives' : 'Non abonné'}
+          right={
+            <button
+              onClick={handleToggle}
+              disabled={loading}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium min-h-[44px] min-w-[44px] transition-opacity"
+              style={
+                subscription
+                  ? { backgroundColor: 'var(--color-primary)', color: '#fff', opacity: loading ? 0.6 : 1 }
+                  : { backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', opacity: loading ? 0.6 : 1 }
+              }
+            >
+              {subscription ? <Bell size={16} /> : <BellOff size={16} />}
+              {subscription ? 'Activé' : 'Désactivé'}
+            </button>
+          }
+        />
+        {subscription && (
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+            <button
+              onClick={handleTest}
+              disabled={testing}
+              className="w-full py-3 rounded-xl text-sm font-semibold min-h-[44px] transition-opacity"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-primary)',
+                border: '1px solid var(--color-primary)',
+                opacity: testing ? 0.6 : 1,
+              }}
+            >
+              {testing ? 'Envoi en cours…' : 'Envoyer une notification test'}
+            </button>
+          </div>
+        )}
+        {message && (
+          <div
+            className="px-4 py-3 text-sm text-center font-medium"
+            style={{ color: message.ok ? 'var(--color-primary)' : '#dc2626' }}
+          >
+            {message.text}
+          </div>
+        )}
+      </Card>
+    </>
+  )
+}
+
 export default function Settings() {
   const { unit, setUnit, targetLow, targetHigh, setTargets, theme, setTheme } = useSettingsStore()
   const reminders = useLiveQuery(() => db.reminders.orderBy('time').toArray(), [])
@@ -332,6 +436,9 @@ export default function Settings() {
           <Plus size={16} /> Ajouter un rappel
         </button>
       </div>
+
+      {/* Push notifications */}
+      <PushSection />
 
       {/* Export */}
       <SectionTitle>Données</SectionTitle>
