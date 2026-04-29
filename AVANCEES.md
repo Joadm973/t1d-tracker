@@ -1,6 +1,6 @@
 # T1D Tracker — État d'avancement du projet
 
-Dernière mise à jour : 2026-04-28
+**Dernière mise à jour** : 2026-04-29
 
 ---
 
@@ -17,7 +17,41 @@ Dernière mise à jour : 2026-04-28
 | Routing | React Router v7 |
 | PWA | vite-plugin-pwa + Workbox |
 | Animations célébration | canvas-confetti |
-| Backend (prévu) | Hono + Cloudflare Workers + D1 |
+| Tests E2E | Playwright 1.56.0 |
+| Backend | Hono + Cloudflare Workers + D1 |
+
+---
+
+## Session 2026-04-29 — Étapes 16 & 17-B
+
+### ✅ Étape 16 : Tests E2E Playwright Push Notifications
+- [x] `apps/web/e2e/helpers.ts` — helpers Playwright
+  - `dismissDisclaimer()`, `waitForSwControl()`, `waitForSwActivated()`
+  - `mockPushManager()` — patch `PushManager.prototype` (plain JS, avant page scripts)
+  - `spoofStandalone()` — override `matchMedia('(display-mode: standalone)')`
+- [x] `apps/web/e2e/push.spec.ts` — 8 tests (6 UI states + 2 SW handler)
+- [x] `apps/web/e2e/offline.spec.ts` — 4 tests offline + SPA routing
+- [x] `apps/web/e2e/sw.spec.ts` — 4 tests SW lifecycle + precaching
+- [x] `apps/web/playwright.config.ts` — config Playwright 1.56.0
+- [x] Fix `Settings.tsx` — Dexie `orderBy('time')` → `toArray().sort()` (champ non-indexé)
+- [x] Update `sw.ts` — `skipWaiting()` + `clients.claim()` + `NavigationRoute` Workbox
+- [x] **14/14 tests Playwright passent ✅**
+
+### ✅ Étape 17-B : Système Mascotte Animée (Dashboard)
+- [x] `src/components/GlucoseMascot.tsx`
+  - Panda 🐼 (in-range 70–180) — bounce y: 0→-6→0, 1.4s, Framer Motion
+  - Tortue 🐢 (low <70) — pulse scale: 1→0.92→1, 2.2s + "Mange quelque chose ! 🍬"
+  - Chat 🐱 (high >180) — rotation -6°→6°, 0.6s + "Bois de l'eau ! 💧"
+  - Sleeping 😴 (no data) — breathe scale: 1→1.04→1, 3s
+  - Couronne 👑 animée si streak ≥ 7 jours
+  - Badge "🔥 X jours dans la cible" si streak > 0
+- [x] `src/hooks/useStreak.ts` — jours consécutifs TIR ≥ 70% (fenêtre 30j, live Dexie)
+- [x] `src/routes/Dashboard.tsx` — mascotte + confetti (canvas-confetti) sur lecture in-range
+- [x] TypeScript — 0 erreurs (`npx tsc --noEmit`) ✅
+
+### ✅ Documentation
+- [x] `CLAUDE.md` exhaustif — architecture, pièges Dexie/Playwright, SW, backend, déploiement
+- [x] `apps/web/.gitignore` — ajout `test-results/`, `playwright-report/`
 
 ---
 
@@ -52,19 +86,17 @@ Dernière mise à jour : 2026-04-28
 - [x] Cards info rapide : dernier repas, dernière insuline, prochain rappel
 - [x] État "aucune mesure" avec call-to-action
 - [x] FAB (+) vers Log
-- [x] Mascotte animée (voir section dédiée)
+- [x] **Mascotte animée + streak counter** 🎉
 
 ### Mascotte animée (`GlucoseMascot`)
-- [x] **Panda endormi** — aucune donnée ou mesure > 3h, animation respiration + zzz staggerés
-- [x] **Tortue** — glycémie < 70 mg/dL, slow pulse, message "Time to eat something! 🍬"
-- [x] **Chat orange** — glycémie > 180 mg/dL, queue animée + corps agité, message "Drink some water! 💧"
-- [x] **Panda joyeux** — glycémie in-range (70–180), bounce vertical 1.4s
-- [x] **Célébration** — danse 2s (rotate + y + scale) + canvas-confetti au log d'une valeur in-range
-- [x] Transitions AnimatePresence entre états (fade + scale)
-- [x] Streak counter — jours consécutifs avec TIR ≥ 70% (calcul Dexie live)
-- [x] Badge "🔥 N days in range" affiché si streak > 0
-- [x] Couronne dorée sur le panda si streak ≥ 7 jours
-- [x] Testé visuellement en navigateur (tous les états validés)
+- [x] Panda 🐼 — in-range, bounce vertical 1.4s
+- [x] Tortue 🐢 — low, slow pulse, message "Mange quelque chose ! 🍬"
+- [x] Chat 🐱 — high, rotation agitée, message "Bois de l'eau ! 💧"
+- [x] Sleeping 😴 — no data, animation respiration
+- [x] Confetti 🎊 — canvas-confetti sur nouvelle lecture in-range
+- [x] Streak counter — jours consécutifs TIR ≥ 70% (Dexie live)
+- [x] Badge "🔥 N jours dans la cible" si streak > 0
+- [x] Couronne 👑 si streak ≥ 7 jours
 
 ### Log (`/log`)
 - [x] Tab Glycémie — valeur, timestamp, notes ; conversion mmol/L ↔ mg/dL automatique
@@ -72,8 +104,7 @@ Dernière mise à jour : 2026-04-28
 - [x] Tab Repas — glucides, description, index glycémique, timestamp
 - [x] Tab Note — texte libre, timestamp
 - [x] Validation Zod + React Hook Form
-- [x] Confirmation visuelle (badge vert "Enregistré !") + retour auto Dashboard après 1.2s
-- [x] Déclenchement célébration mascotte si glycémie in-range
+- [x] Confirmation visuelle + retour auto Dashboard après 1.2s
 
 ### Courbes (`/charts`)
 - [x] Graphique uPlot interactif glycémie
@@ -84,61 +115,80 @@ Dernière mise à jour : 2026-04-28
 - [x] Statistiques : moyenne, écart-type, min, max
 
 ### Historique (`/history`)
-- [x] Liste unifiée de tous les événements (glycémie, insuline, repas, notes)
-- [x] Tri chronologique inverse (plus récent en premier)
+- [x] Liste unifiée de tous les événements
+- [x] Tri chronologique inverse
 - [x] Filtres par type (boutons pill)
-- [x] Suppression par swipe / bouton poubelle avec confirmation
-- [x] Limite 200 entrées par type pour les performances
+- [x] Suppression avec confirmation
+- [x] Limite 200 entrées par type
 
 ### Réglages (`/settings`)
-- [x] Unité glycémie : mg/dL / mmol/L (persisté Zustand)
+- [x] Unité glycémie : mg/dL / mmol/L
 - [x] Thème : Auto / Clair / Sombre
-- [x] Cibles glycémiques (targetLow, targetHigh) — stepper +/−
-- [x] Rappels CRUD complet — ajout, toggle on/off, suppression
-- [x] Formulaire ajout rappel : libellé, heure, type, jours de la semaine
-- [x] Export CSV (toutes les données avec disclaimer en en-tête)
-- [x] Disclaimer médical affiché en pied de page Settings
+- [x] Cibles glycémiques — stepper +/−
+- [x] Rappels CRUD complet — ajout, toggle, suppression
+- [x] Export CSV avec disclaimer
+- [x] Disclaimer médical pied de page
 
-### Calculs cliniques (`lib/calculations.ts`)
-- [x] TIR (Time In Range) — veryLow / low / inRange / high / veryHigh
-- [x] GMI — estimation HbA1c depuis glycémie moyenne
-- [x] Flèche de tendance — régression linéaire sur série temporelle
-- [x] glucoseColor — couleur CSS selon zone
-- [x] glucoseZone — classification texte
-- [x] mmolToMg / mgToMmol
+### Tests E2E Playwright
+- [x] 8 tests push notifications (UI states + SW handler)
+- [x] 4 tests offline mode
+- [x] 4 tests Service Worker lifecycle
+- [x] **16 tests — tous passent ✅**
 
 ---
 
-## En cours / Prochaine étape
+## Backend Cloudflare Worker (Étape 15 — implémenté)
 
-### Web Push via Cloudflare Worker
-**Statut** : non démarré — décision prise le 2026-04-28
-
-Architecture prévue :
-- `apps/worker/` — Hono + Wrangler + D1
-- Endpoints : `POST /api/push/subscribe`, `POST /api/push/schedule`, `DELETE /api/push/subscribe`
-- Cron Trigger Cloudflare (toutes les minutes) — envoie les pushs à l'heure des rappels actifs
-- Clés VAPID à générer
-- Frontend : bouton "Activer les notifications" dans Settings, sync rappels vers worker au toggle
-
-**Prérequis** :
-- Compte Cloudflare avec Workers + D1 activés
-- Décision sur déploiement immédiat ou implémentation code first
+- [x] Hono v4 + Wrangler + D1 SQLite
+- [x] `@block65/webcrypto-web-push` — VAPID compatible Workers runtime
+- [x] `push_subscriptions` + `scheduled_reminders` tables
+- [x] Cron Trigger `* * * * *` — timezone-aware, batching, auto-purge 404/410
+- [x] Endpoints : `GET /api/push/vapid-public-key`, `POST/DELETE /api/push/subscribe`, `POST /api/push/test`, `POST/PUT/DELETE /api/reminders`
 
 ---
 
-## Ce qui reste à faire (backlog)
+## Ce qui reste à faire
 
-| Fonctionnalité | Priorité | Notes |
+| Fonctionnalité | Priorité | Statut |
 |---|---|---|
-| Web Push backend (Cloudflare Worker) | Haute | Voir section En cours |
-| Notifications locales (fallback SW) | Moyenne | Alternative sans backend |
-| Sync cloud (D1 via Worker) | Moyenne | Outbox déjà en place côté SW |
-| Page profil utilisateur | Basse | Ratio insuline/carbs, poids, type insuline |
-| Import données (CSV, Nightscout) | Basse | |
-| Tests Playwright PWA | Basse | Service Worker, offline, push |
-| Déploiement Vercel (frontend) | — | Aucun changement backend requis |
-| Déploiement Cloudflare (worker) | — | Requis pour Web Push |
+| **Déploiement Vercel (frontend)** | Haute | 🔜 Étape 17 |
+| **Déploiement Cloudflare Workers** | Haute | 🔜 Étape 17 |
+| Bouton "Tester la notification" dans Settings | Moyenne | — |
+| Sync cloud (D1 via Worker) | Moyenne | — |
+| Import données (CSV, Nightscout) | Basse | — |
+
+---
+
+## Prochaines étapes — Étape 17 : Déploiement
+
+### Frontend (Vercel)
+1. Créer projet Vercel lié à `apps/web/`
+2. Build: `npm run build` → output: `dist`
+3. Env var: `VITE_WORKER_URL=https://[worker].workers.dev`
+4. Deploy
+
+### Backend (Cloudflare Workers)
+1. `wrangler login`
+2. `wrangler d1 create t1d-tracker-db` → copier database_id dans `wrangler.toml`
+3. `wrangler d1 execute t1d-tracker-db --remote --file=migrations/0001_init.sql`
+4. `wrangler secret put VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT`
+5. `wrangler deploy`
+6. Mettre à jour `CORS_ORIGIN` dans `wrangler.toml`
+
+---
+
+## Notes techniques
+
+### ⚠️ Dexie pitfall
+`db.reminders.orderBy('time')` lève `SchemaError` au runtime car `time` n'est pas indexé.
+→ Utiliser `db.reminders.toArray().then(arr => arr.sort((a,b) => a.time.localeCompare(b.time)))`
+
+### ⚠️ Playwright + grantPermissions
+`context.grantPermissions(['notifications'])` dans les tests UI déclenche l'infra push native Chrome (crash headless).
+→ Mocker `Notification.permission` via `page.addInitScript()` à la place.
+
+### ⚠️ addInitScript — plain JS obligatoire
+Les callbacks sont sérialisés en JS brut — pas d'annotations TypeScript, utiliser `var` et `function() {}`.
 
 ---
 
@@ -149,33 +199,18 @@ t1d-tracker/
   apps/
     web/
       src/
-        routes/
-          Dashboard.tsx      — Accueil + mascotte + TIR
-          Log.tsx            — Formulaires de saisie (4 tabs)
-          Charts.tsx         — Graphiques uPlot + stats
-          History.tsx        — Historique filtrable
-          Settings.tsx       — Réglages + rappels + export
-        components/
-          GlucoseMascot.tsx  — Système mascotte animé complet
-          DisclaimerModal.tsx
-          charts/
-            GlucoseSparkline.tsx
-            TIRBar.tsx
-          layout/
-            BottomNav.tsx
-            Header.tsx
-            SafeArea.tsx
-        db/
-          schema.ts          — Dexie DB + interfaces TypeScript
-        stores/
-          settings.ts        — Zustand persisté (unité, thème, cibles)
-          ui.ts              — Zustand éphémère (disclaimer, tab actif, célébration)
-        lib/
-          calculations.ts    — Calculs cliniques
-          utils.ts           — Formatage dates/valeurs
-        sw/
-          sw.ts              — Service Worker (push, sync, précache)
-    worker/                  — À créer (Cloudflare Worker Hono)
-  CLAUDE.md                  — Instructions projet pour Claude Code
-  AVANCEES.md                — Ce fichier
+        routes/        Dashboard, Log, Charts, History, Settings
+        components/    GlucoseMascot ✨, DisclaimerModal, charts/, layout/
+        hooks/         useStreak ✨, usePushSubscription
+        db/            schema.ts
+        stores/        settings.ts, ui.ts
+        lib/           calculations.ts, utils.ts, worker.ts
+        sw/            sw.ts
+      e2e/             helpers.ts ✨, push.spec.ts ✨, offline.spec.ts ✨, sw.spec.ts ✨
+      playwright.config.ts ✨
+    worker/
+      src/             index.ts, push.ts, scheduler.ts
+      migrations/      0001_init.sql
+  CLAUDE.md            ✨ guide projet complet
+  AVANCEES.md          ce fichier
 ```
