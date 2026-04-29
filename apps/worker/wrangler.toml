@@ -1,0 +1,18 @@
+name                = "t1d-tracker-worker"
+main                = "src/index.ts"
+compatibility_date  = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding       = "DB"
+database_name = "t1d-tracker-db"
+database_id   = "YOUR_DATABASE_ID_HERE"   # remplacé par deploy.sh
+
+[vars]
+# Remplacer par l'URL Vercel après déploiement frontend
+CORS_ORIGIN = "https://t1d-tracker.vercel.app"
+
+# VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT → wrangler secret put
+
+[triggers]
+crons = ["* * * * *"]   # Vérification toutes les minutes

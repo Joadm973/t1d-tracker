@@ -1,0 +1,19 @@
+{
+  "name": "t1d-tracker-worker",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "bash deploy.sh",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@block65/webcrypto-web-push": "^4.0.0",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250430.0",
+    "typescript": "~5.8.0",
+    "wrangler": "^3.99.0"
+  }
+}
